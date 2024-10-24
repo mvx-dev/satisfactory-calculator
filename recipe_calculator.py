@@ -170,8 +170,26 @@ def precompute(classes, recipes):
 
     return item_nodes, recipe_nodes
 
+def search(item, recipes, ingredient=True, product=True):
+    found_recipes = dict()
+    for key, value in list(recipes.items()):
+        if ingredient and value.isIngredient(item):
+            found_recipes[key] = value
+        if product and value.isProduct(item):
+            found_recipes[key] = value
+
+    return found_recipes
+
+
 if __name__ == "__main__":
     classes = getClasses()
     recipes = getRecipes()
 
     item_nodes, recipe_nodes = precompute(classes, recipes)
+    item_1 = item_nodes.get("Desc_OreIron_C")
+    item_2 = item_nodes.get("Desc_IronIngot_C")
+
+    found_recipes = search(item_2, search(item_1, recipe_nodes, product=False), ingredient=False)
+
+    for name, recipe in found_recipes.items():
+        recipe.debugPrint()

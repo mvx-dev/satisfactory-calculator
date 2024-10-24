@@ -1,3 +1,11 @@
+import json
+import csv
+import os
+
+RECIPEFILEPATH = os.path.abspath("parsed_recipes.json")
+CLASSFILEPATH = os.path.abspath("classes.csv")
+
+
 class Node(): ...
 
 
@@ -114,3 +122,56 @@ def printIndent(*values, indent=0, **args):
     print(" "*indent, end='')
     print(*values, **args)
 
+def getClasses():
+    classes = dict()
+    with open(CLASSFILEPATH, "r") as file:
+        reader = csv.reader(file)
+        for row in list(reader)[1:]:
+            classes[row[0]] = row[1]
+
+    return classes
+
+def getRecipes():
+    recipes = dict()
+    with open(RECIPEFILEPATH, "r") as file:
+        recipes = json.load(file)
+
+    return recipes
+
+
+def precompute(classes, recipes):
+    item_nodes = dict()
+    recipe_nodes = dict()
+
+    for key, value in classes.items():
+        item_nodes[key] = Node(data={"class": key, "name": value})
+
+    for key, value in recipes.items():
+        recipe_class, name = value.get("recipeInfo").values()
+        machine = value.get("machine").get("class")
+        machine = machine[0] if machine != [] else "None"
+        rate = value.get("rate")
+        ingredients = value.get("ingredients")
+        products = value.get("products")
+
+        recipe = Recipe(recipe_class, name, machine, rate, ingredients=[], products=[])
+
+        for ingredient in ingredients:
+            node = item_nodes[ingredient.get("item")]
+            recipe.addIngredients((node, ingredient.get("amount")))
+
+        for product in products:
+            node = item_nodes[product.get("item")]
+            recipe.addProducts((node, product.get("amount")))
+
+        recipe.redrawNodes()
+
+        recipe_nodes[recipe_class] = recipe
+
+    return item_nodes, recipe_nodes
+
+if __name__ == "__main__":
+    classes = getClasses()
+    recipes = getRecipes()
+
+    item_nodes, recipe_nodes = precompute(classes, recipes)

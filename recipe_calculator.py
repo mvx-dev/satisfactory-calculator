@@ -230,6 +230,34 @@ def search(item, recipes, ingredient=True, product=True):
     return found_recipes
 
 
+def getRecipeByName(recipes, name):
+    for recipe in recipes:
+        if recipe.name == name:
+            return recipe
+    return None
+
+
+def getRecipeByClass(recipes, class_name):
+    for recipe in recipes:
+        if recipe.class_name == class_name:
+            return recipe
+    return None
+
+
+def getItemByName(items, name):
+    for item in items:
+        if item.data.get("name") == name:
+            return item
+    return None
+
+
+def getItemByClass(items, class_name):
+    for item in items:
+        if item.data.get("class") == class_name:
+            return item
+    return None
+
+
 if __name__ == "__main__":
     classes = getClasses()
     recipes = getRecipes()

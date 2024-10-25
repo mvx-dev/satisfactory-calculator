@@ -2,6 +2,7 @@ from typing import Tuple
 import json
 import csv
 import os
+import sys
 
 RECIPEFILEPATH = os.path.abspath("parsed_recipes.json")
 CLASSFILEPATH = os.path.abspath("classes.csv")
@@ -56,9 +57,13 @@ class Node:
     def getData(self):
         return self.data
 
-    def debugPrint(self, indent=0, depth=0):
-        print(" "*indent, end='')
-        print("self = ", self)
+    def copy(self, data_only=False):
+        if data_only:
+            return Node(self.data)
+
+    def debugPrint(self, indent=0, depth=0, file=sys.stdout, end='', direction="d"):
+        args = {"indent": indent, "file": file}
+        printIndent("self =", self, **args)
         if self.data != None:
             for key, value in self.data.items():
                 printIndent(key, value, sep=": ", **args)
@@ -124,6 +129,20 @@ class Recipe:
                 self.products.append(product)
 
         self.redrawNodes()
+
+    def copy(self, deep=False):
+        if deep:
+            ingredients = []
+            products = []
+            for ingredient in self.ingredients:
+                ingredients.append((ingredient[0].copy(), ingredient[1]))
+            for product in self.products:
+                products.append((product[0].copy(), product[1]))
+
+            return Recipe(self.recipe_class, self.name, self.machine,
+                          self.rate, ingredients, products)
+        return Recipe(self.recipe_class, self.name, self.machine, self.rate,
+                      self.ingredients, self.products)
 
     def debugPrint(self, indent=0, depth=0, file=sys.stdout, end='\n'):
         args = {"indent": indent, "file": file}

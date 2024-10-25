@@ -1,3 +1,4 @@
+from typing import Tuple
 import json
 import csv
 import os
@@ -13,9 +14,10 @@ class Recipe(): ...
 
 
 class Node:
-    def __init__(self, data: dict = None, children: list = []) -> None:
+    def __init__(self, data: dict = None, children: list = [], parents: tuple = []) -> None:
         self.data = data if type(data) == dict else None
         self.children = tuple(children)
+        self.parents = tuple(parents)
 
     def addChildren(self, *children: Node) -> None:
         for child, _ in children:
@@ -26,10 +28,24 @@ class Node:
                 self.children = self.children + (child,)
 
     def setChildren(self, *children: Node) -> None:
-        self.children = self.children + children
+        self.children = tuple(children)
 
-    def getChildren(self) -> Node:
+    def getChildren(self) -> Tuple[Node]:
         return self.children
+    
+    def addParents(self, *parents: Node) -> None:
+        for parent, _ in parents:
+            for item in self.parents:
+                if parent.getData == item.getData:
+                    break
+            else:
+                self.parents = self.parents + (parent, )
+    
+    def setParents(self, *parents: Node) -> None:
+        self.parents = tuple(parents)
+
+    def getParents(self) -> Tuple[Node]:
+        return self.parents
 
     def addData(self, key: str, value: any):
         self.data[key] = value
@@ -45,13 +61,20 @@ class Node:
         print("self = ", self)
         if self.data != None:
             for key, value in self.data.items():
-                print(" "*indent, end='')
-                print(key, value, sep=": ")
-        print(" "*indent, end='')
-        print("self.children =", len(self.children))
-        if depth > 0:
-            for child in self.children:
-                child.debugPrint(indent=indent+4, depth=depth-1)
+                printIndent(key, value, sep=": ", **args)
+        printIndent("self.children =", len(self.children), **args)
+        printIndent("self.parents =", len(self.parents), **args)
+        if direction == "d":
+            if depth > 0:
+                for child in self.children:
+                    child.debugPrint(
+                        indent=indent+4, depth=depth-1, file=file, end=end)
+        elif direction == "u":
+            if depth > 0:
+                for parent in self.parents:
+                    parent.debugPrint(
+                        indent=indent+4, depth=depth-1, file=file, end=end, direction="u")
+        print(end, end='', file=file)
 
 
 class Recipe:
@@ -72,7 +95,7 @@ class Recipe:
             if comp_ingredient == ingredient:
                 return True
         return False
-    
+
     def isProduct(self, comp_product):
         for product, _ in self.products:
             if comp_product == product:
@@ -80,9 +103,10 @@ class Recipe:
         return False
 
     def redrawNodes(self):
-        for node, _ in self.ingredients:
-            for product in self.products:
-                node.addChildren(product)
+        for node, n_amount in self.ingredients:
+            for product, p_amount in self.products:
+                node.addChildren((product, p_amount))
+                product.addParents((node, n_amount))
 
     def addNodes(self, ingredients=[], products=[]):
         self.addIngredients(*ingredients)
@@ -101,26 +125,29 @@ class Recipe:
 
         self.redrawNodes()
 
-    def debugPrint(self, indent=0, depth=0):
-        printIndent("self =", self, indent=indent)
-        printIndent("self.recipe_class =", self.recipe_class, indent=indent)
-        printIndent("self.name =", self.name, indent=indent)
-        printIndent("self.machine =", self.machine, indent=indent)
-        printIndent("self.rate =", self.rate, indent=indent)
-        printIndent("self.ingredients =", len(self.ingredients), indent=indent)
-        printIndent("self.products =", len(self.products), indent=indent)
+    def debugPrint(self, indent=0, depth=0, file=sys.stdout, end='\n'):
+        args = {"indent": indent, "file": file}
+        printIndent("self =", self, **args)
+        printIndent("self.recipe_class =", self.recipe_class, **args)
+        printIndent("self.name =", self.name, **args)
+        printIndent("self.machine =", self.machine, **args)
+        printIndent("self.rate =", self.rate, **args)
+        printIndent("self.ingredients =", len(self.ingredients), **args)
+        printIndent("self.products =", len(self.products), **args)
         for ingredient, _ in self.ingredients[:5]:
-            printIndent("Ingredient: ", end='', indent=indent)
-            ingredient.debugPrint(indent=indent+4, depth=depth)
+            printIndent("Ingredient: ", end='', **args)
+            ingredient.debugPrint(indent=indent+4, file=file, depth=depth, end='\n')
         for product, _ in self.products[:5]:
-            printIndent("Product: ", end='', indent=indent)
-            product.debugPrint(indent=indent+4, depth=depth)
-        print()
+            printIndent("Product: ", end='', **args)
+            product.debugPrint(indent=indent+4, file=file, depth=depth, end='\n')
+        print(end, end='', file=file)
 
 
 def printIndent(*values, indent=0, **args):
-    print(" "*indent, end='')
+    file = args.get("file")
+    print(" "*indent, end='', file=file)
     print(*values, **args)
+
 
 def getClasses():
     classes = dict()
@@ -130,6 +157,7 @@ def getClasses():
             classes[row[0]] = row[1]
 
     return classes
+
 
 def getRecipes():
     recipes = dict()
@@ -154,7 +182,8 @@ def precompute(classes, recipes):
         ingredients = value.get("ingredients")
         products = value.get("products")
 
-        recipe = Recipe(recipe_class, name, machine, rate, ingredients=[], products=[])
+        recipe = Recipe(recipe_class, name, machine,
+                        rate, ingredients=[], products=[])
 
         for ingredient in ingredients:
             node = item_nodes[ingredient.get("item")]
@@ -169,6 +198,7 @@ def precompute(classes, recipes):
         recipe_nodes[recipe_class] = recipe
 
     return item_nodes, recipe_nodes
+
 
 def search(item, recipes, ingredient=True, product=True):
     found_recipes = dict()

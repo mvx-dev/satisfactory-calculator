@@ -5,10 +5,12 @@ Tools -> Run Macros... -> calculator -> Select Macro
 '''
 import uno
 
+
 def __loadDocument():
     desktop = XSCRIPTCONTEXT.getDesktop()
     document = desktop.getCurrentComponent()
     return document
+
 
 def __loadSheet(idx=-1, document=None):
     if document == None:
@@ -22,6 +24,7 @@ def __loadSheet(idx=-1, document=None):
     sheet = document.getSheets().getByIndex(idx)
     return sheet
 
+
 def helloWorld():
     # oDoc = XSCRIPTCONTEXT.getDocument()
     # oSheet = oDoc.getSheets().getByIndex(0)
@@ -34,16 +37,19 @@ def helloWorld():
 
     active_sheet = model.CurrentController.ActiveSheet
     recipe_sheet = model.getSheets().getByName("recipes")
-    active_sheet.getCellByPosition(0,0).String = recipe_sheet.getCellByPosition(0,0)
+    active_sheet.getCellByPosition(
+        0, 0).String = recipe_sheet.getCellByPosition(0, 0)
 
     return None
+
 
 def test():
     document = __loadDocument()
     sheet = __loadSheet()
-    sheet.getCellByPosition(3,0).String = document.Sheets.Count
+    sheet.getCellByPosition(3, 0).String = document.Sheets.Count
 
     return None
+
 
 def setActive():
     document = __loadDocument()
@@ -51,15 +57,17 @@ def setActive():
 
     for idx in range(count):
         sheet = __loadSheet(idx)
-        sheet.getCellByPosition(1,0).String = ""
+        sheet.getCellByPosition(1, 0).String = ""
 
     sheet = __loadSheet()
-    sheet.getCellByPosition(1,0).String = "Active Factory"
-    
+    sheet.getCellByPosition(1, 0).String = "Active Factory"
+
     return None
+
 
 def getActive():
     document = __loadDocument()
+
 
 def itemLoader():
     ...
